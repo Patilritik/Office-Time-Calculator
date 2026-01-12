@@ -154,84 +154,174 @@ export default function TimeCalculator() {
     return `${h}h ${m}m ${s}s`;
   };
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 px-3 sm:px-6">
+return (
+  <div className="min-h-screen bg-gradient-to-br from-indigo-700 via-purple-700 to-pink-600 px-4 sm:px-6 lg:px-10 py-6 lg:py-10">
 
-      {/* RESET BUTTON (SCREEN FIXED) */}
-      <button
-        onClick={handleReset}
-        className="
-          fixed top-4 right-4 z-50
-          bg-white/20 backdrop-blur-md
-          px-4 py-2 rounded-full
-          text-xs sm:text-sm font-semibold
-          text-white shadow-lg
-          hover:bg-white/30
-          active:scale-95 transition
-        "
-      >
-        Reset
-      </button>
+    {/* RESET BUTTON */}
+    <button
+      onClick={handleReset}
+      className="
+        fixed top-4 right-4 lg:top-6 lg:right-8 z-50
+        bg-white/20 backdrop-blur-md
+        px-4 lg:px-5 py-2 rounded-full
+        text-xs lg:text-sm font-semibold
+        text-white shadow-lg
+        hover:bg-white/30 active:scale-95 transition
+      "
+    >
+      Reset Day
+    </button>
 
-      {/* MAIN CARD */}
-      <div className="relative w-full max-w-[360px] sm:max-w-md bg-white/20 backdrop-blur-xl rounded-[2.5rem] shadow-2xl p-5 sm:p-7 text-white">
+    {/* PAGE CONTAINER */}
+    <div className="
+      max-w-6xl mx-auto
+      grid grid-cols-1 lg:grid-cols-12
+      gap-6 lg:gap-8
+      items-stretch
+    ">
 
-        {/* Header */}
-        <div className="text-center mb-5 sm:mb-6">
-          <h1 className="text-xl sm:text-2xl font-bold">
-            Work Time Tracker
+      {/* LEFT INFO PANEL */}
+      <div className="
+        lg:col-span-4
+        bg-white/15 backdrop-blur-xl
+        rounded-3xl
+        p-6 lg:p-8
+        text-white shadow-xl
+      ">
+        <h2 className="text-xl lg:text-2xl font-bold mb-5">
+          Work Overview
+        </h2>
+
+        <div className="space-y-5">
+          <div>
+            <p className="text-xs lg:text-sm text-white/70">Status</p>
+            <p className="text-base lg:text-lg font-semibold">
+              {isWorking
+                ? isOnBreak
+                  ? "On Break ☕"
+                  : "Working 💻"
+                : "Not Working ❌"}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-xs lg:text-sm text-white/70">
+              Total Worked Today
+            </p>
+            <p className="text-xl lg:text-2xl font-bold">
+              {formatTime(totalMs)}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-xs lg:text-sm text-white/70">Target</p>
+            <p className="text-base lg:text-lg font-semibold">
+              8 Hours
+            </p>
+          </div>
+
+          <div className="pt-4 border-t border-white/20">
+            <p className="text-xs text-white/70">
+              Small consistent efforts lead to big success.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* MAIN TIMER CARD */}
+      <div className="
+        lg:col-span-8
+        bg-white/20 backdrop-blur-xl
+        rounded-[2rem] lg:rounded-[3rem]
+        p-6 sm:p-8 lg:p-12
+        text-white shadow-2xl relative
+      ">
+
+        {/* HEADER */}
+        <div className="mb-6 lg:mb-10">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold">
+            Office Time Tracker
           </h1>
-          <p className="text-xs sm:text-sm text-white/80">
-            Stay consistent, stay productive
+          <p className="text-xs sm:text-sm lg:text-base text-white/70 mt-1">
+            Track your productive hours professionally
           </p>
         </div>
 
-        {/* Timer */}
-        <div className="bg-white/20 rounded-3xl py-5 sm:py-6 text-center mb-4 sm:mb-5">
+        {/* TIMER DISPLAY */}
+        <div className="bg-white/20 rounded-3xl py-6 sm:py-8 lg:py-10 text-center mb-6 lg:mb-10">
           <p className="text-xs sm:text-sm text-white/70">
-            {isOnBreak ? "On Break" : "Current Session"}
+            {isOnBreak ? "Currently On Break" : "Current Session"}
           </p>
-          <p className="text-3xl sm:text-4xl font-extrabold mt-2">
+          <p className="text-3xl sm:text-4xl lg:text-6xl font-extrabold mt-3">
             {isWorking ? formatTime(liveMs) : "0h 0m 0s"}
           </p>
         </div>
 
-        {/* Total */}
-        <div className="flex justify-between items-center bg-white/15 rounded-2xl px-4 py-3 mb-5 sm:mb-6">
-          <p className="text-xs sm:text-sm">Total Worked</p>
-          <p className="text-base sm:text-lg font-semibold">
+        {/* TOTAL */}
+        <div className="flex justify-between items-center bg-white/15 rounded-2xl px-4 sm:px-6 lg:px-8 py-3 lg:py-5 mb-6 lg:mb-10">
+          <p className="text-sm lg:text-lg">Total Time Today</p>
+          <p className="text-lg lg:text-2xl font-bold">
             {formatTime(totalMs)}
           </p>
         </div>
 
-        {/* Buttons */}
+        {/* ACTION BUTTONS */}
         {!isWorking ? (
           <button
             onClick={handleIn}
-            className="w-full py-4 rounded-2xl bg-gradient-to-r from-indigo-400 to-purple-500 font-semibold text-base sm:text-lg shadow-lg active:scale-95"
+            className="
+              w-full py-4 lg:py-5
+              rounded-2xl
+              bg-gradient-to-r from-indigo-400 to-purple-500
+              font-semibold
+              text-base sm:text-lg lg:text-xl
+              shadow-xl
+              active:scale-95 transition
+            "
           >
-            IN
+            Start Work (IN)
           </button>
         ) : (
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
             <button
               onClick={handleOut}
-              className="w-full py-4 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-500 font-semibold text-base sm:text-lg shadow-lg active:scale-95"
+              className="
+                py-4 lg:py-5 rounded-2xl
+                bg-gradient-to-r from-pink-500 to-rose-500
+                font-semibold
+                text-base sm:text-lg lg:text-xl
+                shadow-lg
+                active:scale-95 transition
+              "
             >
-              OUT
+              Stop Work
             </button>
 
             {!isOnBreak ? (
               <button
                 onClick={handleBreak}
-                className="w-full py-3 rounded-2xl bg-gradient-to-r from-amber-300 to-orange-400 text-black text-sm sm:text-base shadow-md active:scale-95"
+                className="
+                  py-4 lg:py-5 rounded-2xl
+                  bg-gradient-to-r from-amber-300 to-orange-400
+                  text-black font-semibold
+                  text-base sm:text-lg lg:text-xl
+                  shadow-lg
+                  active:scale-95 transition
+                "
               >
                 Take Break
               </button>
             ) : (
               <button
                 onClick={handleResume}
-                className="w-full py-3 rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 text-sm sm:text-base shadow-md active:scale-95"
+                className="
+                  py-4 lg:py-5 rounded-2xl
+                  bg-gradient-to-r from-cyan-400 to-blue-500
+                  font-semibold
+                  text-base sm:text-lg lg:text-xl
+                  shadow-lg
+                  active:scale-95 transition
+                "
               >
                 Resume Work
               </button>
@@ -239,24 +329,24 @@ export default function TimeCalculator() {
           </div>
         )}
 
-        {/* Footer */}
-        <p className="text-center text-[10px] sm:text-xs text-white/70 mt-5 sm:mt-6">
+        {/* FOOTER */}
+        <p className="text-center text-xs sm:text-sm text-white/60 mt-8 lg:mt-10">
           Crafted with ❤️ by <span className="font-semibold">Ritik Patil</span>
         </p>
 
-        {/* 🎉 8-HOUR POPUP */}
+        {/* 🎉 POPUP */}
         {showCongrats && (
-          <div className="absolute inset-0 bg-black/60 rounded-[2.5rem] flex items-center justify-center p-4">
-            <div className="bg-white text-black rounded-3xl p-5 sm:p-6 text-center w-full max-w-[280px] animate-bounce">
-              <h2 className="text-xl sm:text-2xl font-bold">😊 Congrats!</h2>
-              <p className="mt-2 text-xs sm:text-sm">
-                You’ve completed <strong>8 hours</strong> of work today!
+          <div className="absolute inset-0 bg-black/60 rounded-[2rem] lg:rounded-[3rem] flex items-center justify-center p-4">
+            <div className="bg-white text-black rounded-3xl p-6 text-center w-full max-w-xs animate-bounce">
+              <h2 className="text-xl font-bold">🎉 Congratulations!</h2>
+              <p className="mt-2 text-sm">
+                You completed <strong>8 hours</strong> today.
               </p>
               <button
                 onClick={() => setShowCongrats(false)}
-                className="mt-4 px-4 py-2 bg-indigo-500 text-white rounded-xl text-sm"
+                className="mt-4 px-5 py-2 bg-indigo-600 text-white rounded-xl text-sm"
               >
-                Awesome!
+                Great!
               </button>
             </div>
           </div>
@@ -264,5 +354,9 @@ export default function TimeCalculator() {
 
       </div>
     </div>
-  );
+  </div>
+);
+
+
+
 }
