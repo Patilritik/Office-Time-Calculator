@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 
 const STORAGE_KEY = "office_time_tracker_v1";
+const THEME_KEY = "theme_preference";
 const EIGHT_HOURS = 8 * 60 * 60 * 1000;
 
 export default function TimeCalculator() {
@@ -13,7 +14,54 @@ export default function TimeCalculator() {
   const [showCongrats, setShowCongrats] = useState(false);
   const [eightHourNotified, setEightHourNotified] = useState(false);
 
-  /* ================= RESTORE ================= */
+  // Theme state: "light" | "dark" | "system"
+  const [theme, setTheme] = useState(() => {
+    const saved = localStorage.getItem(THEME_KEY);
+    return saved || "system";
+  });
+
+  // Apply theme
+  useEffect(() => {
+    const root = window.document.documentElement;
+
+    const applyTheme = () => {
+      if (theme === "dark") {
+        root.classList.add("dark");
+      } else if (theme === "light") {
+        root.classList.remove("dark");
+      } else {
+        if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+          root.classList.add("dark");
+        } else {
+          root.classList.remove("dark");
+        }
+      }
+    };
+
+    applyTheme();
+
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleChange = () => {
+      if (theme === "system") applyTheme();
+    };
+
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem(THEME_KEY, theme);
+  }, [theme]);
+
+  const cycleTheme = () => {
+    setTheme((prev) => {
+      if (prev === "light") return "dark";
+      if (prev === "dark") return "system";
+      return "light";
+    });
+  };
+
+  // Restore timer data
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (!saved) return;
@@ -21,28 +69,24 @@ export default function TimeCalculator() {
     const data = JSON.parse(saved);
     const now = Date.now();
 
-    setIsWorking(data.isWorking);
-    setIsOnBreak(data.isOnBreak);
+    setIsWorking(data.isWorking ?? false);
+    setIsOnBreak(data.isOnBreak ?? false);
     setTotalMs(data.totalMs || 0);
     setEightHourNotified(data.eightHourNotified || false);
 
-    if (data.isWorking) {
-      if (data.isOnBreak) {
-        setSessionAccumulatedMs(data.sessionAccumulatedMs || 0);
-        setLiveMs(data.sessionAccumulatedMs || 0);
-      } else {
-        const extra = now - data.lastUpdatedAt;
-        const restored =
-          (data.sessionAccumulatedMs || 0) + extra;
-
-        setSessionAccumulatedMs(restored);
-        setInTime(now);
-        setLiveMs(restored);
-      }
+    if (data.isWorking && !data.isOnBreak) {
+      const extra = now - (data.lastUpdatedAt || now);
+      const restored = (data.sessionAccumulatedMs || 0) + extra;
+      setSessionAccumulatedMs(restored);
+      setLiveMs(restored);
+      setInTime(now);
+    } else if (data.isWorking && data.isOnBreak) {
+      setSessionAccumulatedMs(data.sessionAccumulatedMs || 0);
+      setLiveMs(data.sessionAccumulatedMs || 0);
     }
   }, []);
 
-  /* ================= SAVE ================= */
+  // Auto-save timer data
   useEffect(() => {
     localStorage.setItem(
       STORAGE_KEY,
@@ -56,47 +100,28 @@ export default function TimeCalculator() {
         lastUpdatedAt: Date.now(),
       })
     );
-  }, [
-    isWorking,
-    isOnBreak,
-    inTime,
-    sessionAccumulatedMs,
-    totalMs,
-    eightHourNotified,
-  ]);
+  }, [isWorking, isOnBreak, inTime, sessionAccumulatedMs, totalMs, eightHourNotified]);
 
-  /* ================= LIVE TIMER ================= */
+  // Live timer
   useEffect(() => {
-    let interval;
-    if (isWorking && !isOnBreak && inTime) {
-      interval = setInterval(() => {
-        const currentSession =
-          sessionAccumulatedMs + (Date.now() - inTime);
+    if (!isWorking || isOnBreak || !inTime) return;
 
-        setLiveMs(currentSession);
+    const interval = setInterval(() => {
+      const currentSession = sessionAccumulatedMs + (Date.now() - inTime);
+      setLiveMs(currentSession);
 
-        if (
-          !eightHourNotified &&
-          totalMs + currentSession >= EIGHT_HOURS
-        ) {
-          setShowCongrats(true);
-          setEightHourNotified(true);
-        }
-      }, 1000);
-    }
+      if (!eightHourNotified && totalMs + currentSession >= EIGHT_HOURS) {
+        setShowCongrats(true);
+        setEightHourNotified(true);
+      }
+    }, 1000);
+
     return () => clearInterval(interval);
-  }, [
-    isWorking,
-    isOnBreak,
-    inTime,
-    sessionAccumulatedMs,
-    totalMs,
-    eightHourNotified,
-  ]);
+  }, [isWorking, isOnBreak, inTime, sessionAccumulatedMs, totalMs, eightHourNotified]);
 
-  /* ================= ACTIONS ================= */
   const handleIn = () => {
-    setInTime(Date.now());
+    const now = Date.now();
+    setInTime(now);
     setIsWorking(true);
     setIsOnBreak(false);
     setSessionAccumulatedMs(0);
@@ -105,11 +130,8 @@ export default function TimeCalculator() {
 
   const handleOut = () => {
     const now = Date.now();
-    const sessionMs = isOnBreak
-      ? sessionAccumulatedMs
-      : sessionAccumulatedMs + (now - inTime);
-
-    setTotalMs(prev => prev + sessionMs);
+    const sessionMs = isOnBreak ? sessionAccumulatedMs : sessionAccumulatedMs + (now - inTime);
+    setTotalMs((prev) => prev + sessionMs);
     setIsWorking(false);
     setIsOnBreak(false);
     setSessionAccumulatedMs(0);
@@ -131,10 +153,8 @@ export default function TimeCalculator() {
     setIsOnBreak(false);
   };
 
-  /* ================= RESET ================= */
   const handleReset = () => {
-    if (!window.confirm("Reset today's work time?")) return;
-
+    if (!window.confirm("Reset today's tracked time?")) return;
     setIsWorking(false);
     setIsOnBreak(false);
     setInTime(null);
@@ -143,220 +163,165 @@ export default function TimeCalculator() {
     setTotalMs(0);
     setEightHourNotified(false);
     setShowCongrats(false);
-
     localStorage.removeItem(STORAGE_KEY);
   };
 
   const formatTime = (ms) => {
+    if (!ms) return "0h 0m 0s";
     const h = Math.floor(ms / 3600000);
     const m = Math.floor((ms % 3600000) / 60000);
     const s = Math.floor((ms % 60000) / 1000);
     return `${h}h ${m}m ${s}s`;
   };
 
-return (
-  <div className="min-h-screen bg-gradient-to-br from-indigo-700 via-purple-700 to-pink-600 px-4 sm:px-6 lg:px-10 py-6 lg:py-10">
+  const progress = Math.min(100, ((totalMs + liveMs) / EIGHT_HOURS) * 100);
+  const isComplete = progress >= 100;
 
-    {/* RESET BUTTON */}
-    <button
-      onClick={handleReset}
-      className="
-        fixed top-4 right-4 lg:top-6 lg:right-8 z-50
-        bg-white/20 backdrop-blur-md
-        px-4 lg:px-5 py-2 rounded-full
-        text-xs lg:text-sm font-semibold
-        text-white shadow-lg
-        hover:bg-white/30 active:scale-95 transition
-      "
-    >
-      Reset Day
-    </button>
+  return (
+    <div className="min-h-screen bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 transition-colors duration-300">
 
-    {/* PAGE CONTAINER */}
-    <div className="
-      max-w-6xl mx-auto
-      grid grid-cols-1 lg:grid-cols-12
-      gap-6 lg:gap-8
-      items-stretch
-    ">
+      {/* Controls: Theme + Reset */}
+      <div className="fixed top-4 right-4 z-50 flex items-center gap-3">
+        {/* <button
+          onClick={cycleTheme}
+          className="px-4 py-2 text-sm font-medium rounded-lg bg-white/80 dark:bg-stone-900/80 backdrop-blur-sm border border-stone-200 dark:border-stone-800 hover:bg-stone-100 dark:hover:bg-stone-800 shadow-sm transition"
+          title={`Current: ${theme === "system" ? "System" : theme === "light" ? "Light" : "Dark"}`}
+        >
+          {theme === "light" ? "☀️ Light" : theme === "dark" ? "🌙 Dark" : "🔄 System"}
+        </button> */}
 
-      {/* LEFT INFO PANEL */}
-      <div className="
-        lg:col-span-4
-        bg-white/15 backdrop-blur-xl
-        rounded-3xl
-        p-6 lg:p-8
-        text-white shadow-xl
-      ">
-        <h2 className="text-xl lg:text-2xl font-bold mb-5">
-          Work Overview
-        </h2>
-
-        <div className="space-y-5">
-          <div>
-            <p className="text-xs lg:text-sm text-white/70">Status</p>
-            <p className="text-base lg:text-lg font-semibold">
-              {isWorking
-                ? isOnBreak
-                  ? "On Break ☕"
-                  : "Working 💻"
-                : "Not Working ❌"}
-            </p>
-          </div>
-
-          <div>
-            <p className="text-xs lg:text-sm text-white/70">
-              Total Worked Today
-            </p>
-            <p className="text-xl lg:text-2xl font-bold">
-              {formatTime(totalMs)}
-            </p>
-          </div>
-
-          <div>
-            <p className="text-xs lg:text-sm text-white/70">Target</p>
-            <p className="text-base lg:text-lg font-semibold">
-              8 Hours
-            </p>
-          </div>
-
-          <div className="pt-4 border-t border-white/20">
-            <p className="text-xs text-white/70">
-              Small consistent efforts lead to big success.
-            </p>
-          </div>
-        </div>
+        <button
+          onClick={handleReset}
+          className="cursor-pointer px-4 py-2 text-sm font-medium rounded-lg bg-white/80 dark:bg-stone-900/80 backdrop-blur-sm border border-stone-200 dark:border-stone-800 hover:bg-stone-100 dark:hover:bg-stone-800 shadow-sm transition active:scale-95"
+        >
+          Reset Day
+        </button>
       </div>
 
-      {/* MAIN TIMER CARD */}
-      <div className="
-        lg:col-span-8
-        bg-white/20 backdrop-blur-xl
-        rounded-[2rem] lg:rounded-[3rem]
-        p-6 sm:p-8 lg:p-12
-        text-white shadow-2xl relative
-      ">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
 
-        {/* HEADER */}
-        <div className="mb-6 lg:mb-10">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold">
-            Office Time Tracker
-          </h1>
-          <p className="text-xs sm:text-sm lg:text-base text-white/70 mt-1">
-            Track your productive hours professionally
-          </p>
-        </div>
-
-        {/* TIMER DISPLAY */}
-        <div className="bg-white/20 rounded-3xl py-6 sm:py-8 lg:py-10 text-center mb-6 lg:mb-10">
-          <p className="text-xs sm:text-sm text-white/70">
-            {isOnBreak ? "Currently On Break" : "Current Session"}
-          </p>
-          <p className="text-3xl sm:text-4xl lg:text-6xl font-extrabold mt-3">
-            {isWorking ? formatTime(liveMs) : "0h 0m 0s"}
-          </p>
-        </div>
-
-        {/* TOTAL */}
-        <div className="flex justify-between items-center bg-white/15 rounded-2xl px-4 sm:px-6 lg:px-8 py-3 lg:py-5 mb-6 lg:mb-10">
-          <p className="text-sm lg:text-lg">Total Time Today</p>
-          <p className="text-lg lg:text-2xl font-bold">
-            {formatTime(totalMs)}
-          </p>
-        </div>
-
-        {/* ACTION BUTTONS */}
-        {!isWorking ? (
-          <button
-            onClick={handleIn}
-            className="
-              w-full py-4 lg:py-5
-              rounded-2xl
-              bg-gradient-to-r from-indigo-400 to-purple-500
-              font-semibold
-              text-base sm:text-lg lg:text-xl
-              shadow-xl
-              active:scale-95 transition
-            "
-          >
-            Start Work (IN)
-          </button>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
-            <button
-              onClick={handleOut}
-              className="
-                py-4 lg:py-5 rounded-2xl
-                bg-gradient-to-r from-pink-500 to-rose-500
-                font-semibold
-                text-base sm:text-lg lg:text-xl
-                shadow-lg
-                active:scale-95 transition
-              "
-            >
-              Stop Work
-            </button>
-
-            {!isOnBreak ? (
-              <button
-                onClick={handleBreak}
-                className="
-                  py-4 lg:py-5 rounded-2xl
-                  bg-gradient-to-r from-amber-300 to-orange-400
-                  text-black font-semibold
-                  text-base sm:text-lg lg:text-xl
-                  shadow-lg
-                  active:scale-95 transition
-                "
-              >
-                Take Break
-              </button>
-            ) : (
-              <button
-                onClick={handleResume}
-                className="
-                  py-4 lg:py-5 rounded-2xl
-                  bg-gradient-to-r from-cyan-400 to-blue-500
-                  font-semibold
-                  text-base sm:text-lg lg:text-xl
-                  shadow-lg
-                  active:scale-95 transition
-                "
-              >
-                Resume Work
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* FOOTER */}
-        <p className="text-center text-xs sm:text-sm text-white/60 mt-8 lg:mt-10">
-          Crafted with ❤️ by <span className="font-semibold">Ritik Patil</span>
-        </p>
-
-        {/* 🎉 POPUP */}
-        {showCongrats && (
-          <div className="absolute inset-0 bg-black/60 rounded-[2rem] lg:rounded-[3rem] flex items-center justify-center p-4">
-            <div className="bg-white text-black rounded-3xl p-6 text-center w-full max-w-xs animate-bounce">
-              <h2 className="text-xl font-bold">🎉 Congratulations!</h2>
-              <p className="mt-2 text-sm">
-                You completed <strong>8 hours</strong> today.
-              </p>
-              <button
-                onClick={() => setShowCongrats(false)}
-                className="mt-4 px-5 py-2 bg-indigo-600 text-white rounded-xl text-sm"
-              >
-                Great!
-              </button>
+          {/* Sidebar */}
+          <div className="lg:col-span-4">
+            <div className="bg-white dark:bg-stone-900 rounded-xl shadow-sm border border-stone-200 dark:border-stone-800 p-6">
+              <h2 className="text-xl font-semibold mb-6">Today's Summary</h2>
+              <div className="space-y-6">
+                <div>
+                  <p className="text-sm text-stone-500 dark:text-stone-400">Status</p>
+                  <p className="text-lg font-medium mt-1">
+                    {isWorking ? (
+                      isOnBreak ? (
+                        <span className="text-amber-600 dark:text-amber-400">On Break ☕</span>
+                      ) : (
+                        <span className="text-teal-600 dark:text-teal-400">Working</span>
+                      )
+                    ) : (
+                      <span className="text-stone-500 dark:text-stone-400">Not Working</span>
+                    )}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-stone-500 dark:text-stone-400">Total Worked</p>
+                  <p className="text-2xl font-bold mt-1">{formatTime(totalMs)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-stone-500 dark:text-stone-400">Goal</p>
+                  <p className="text-lg font-medium mt-1">8 hours</p>
+                </div>
+              </div>
             </div>
           </div>
-        )}
 
+          {/* Main Card */}
+          <div className="lg:col-span-8">
+            <div className="bg-white dark:bg-stone-900 rounded-2xl shadow-sm border border-stone-200 dark:border-stone-800 p-6 sm:p-8 lg:p-10">
+              <div className="text-center mb-10">
+                <h1 className="text-3xl sm:text-4xl font-bold">Work Time Tracker</h1>
+                <p className="text-stone-500 dark:text-stone-400 mt-2">
+                  Track your focused hours
+                </p>
+              </div>
+
+              <div className="bg-stone-50 dark:bg-stone-800 rounded-xl py-10 px-6 text-center mb-10 border border-stone-200 dark:border-stone-700">
+                <p className="text-sm text-stone-500 dark:text-stone-400 mb-3">
+                  {isOnBreak ? "On Break" : isWorking ? "Current Session" : "Not Started"}
+                </p>
+                <div
+                  className={`text-5xl sm:text-6xl lg:text-7xl font-mono font-bold tracking-tight ${
+                    isComplete ? "text-teal-600 dark:text-teal-400" : ""
+                  }`}
+                >
+                  {isWorking ? formatTime(liveMs) : "— — —"}
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center bg-stone-50 dark:bg-stone-800 rounded-xl px-6 py-4 mb-10 border border-stone-200 dark:border-stone-700">
+                <span className="text-lg">Total Today</span>
+                <span className="text-2xl font-bold">{formatTime(totalMs)}</span>
+              </div>
+
+              {!isWorking ? (
+                <button
+                  onClick={handleIn}
+                  className="cursor-pointer w-full py-5 px-8 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xl shadow-md transition active:scale-[0.98]"
+                >
+                  Start Work
+                </button>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <button
+                    onClick={handleOut}
+                    className="cursor-pointer py-5 px-8 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xl shadow-md transition active:scale-[0.98]"
+                  >
+                    End Work
+                  </button>
+
+                  {!isOnBreak ? (
+                    <button
+                      onClick={handleBreak}
+                      className="cursor-pointer py-5 px-8 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold text-xl shadow-md transition active:scale-[0.98]"
+                    >
+                      Take Break
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleResume}
+                      className="cursor-pointer py-5 px-8 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xl shadow-md transition active:scale-[0.98]"
+                    >
+                      Resume
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Updated footer with your name */}
+              <p className="text-center text-sm text-stone-500 dark:text-stone-400 mt-12">
+                Made with focus by Ritik Patil • {new Date().getFullYear()}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* Congrats Modal */}
+      {showCongrats && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-stone-900 rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl">
+            <h2 className="text-2xl font-bold mb-3 text-teal-700 dark:text-teal-300">
+              Well done! 🎉
+            </h2>
+            <p className="text-stone-600 dark:text-stone-300 mb-6">
+              You’ve completed <strong>8 hours</strong> today.
+            </p>
+            <button
+              onClick={() => setShowCongrats(false)}
+              className="px-8 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-medium transition"
+            >
+              Awesome
+            </button>
+          </div>
+        </div>
+      )}
     </div>
-  </div>
-);
-
-
-
+  );
 }
