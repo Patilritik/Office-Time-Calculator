@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 
 const STORAGE_KEY = "office_time_tracker_v1";
 const THEME_KEY = "theme_preference";
-const EIGHT_HOURS = 8 * 60 * 60 * 1000;
+// const EIGHT_HOURS = 8 * 60 * 60 * 1000;
+const EIGHT_HOURS = 5000;
 
 export default function TimeCalculator() {
   const [isWorking, setIsWorking] = useState(false);
@@ -315,7 +316,7 @@ export default function TimeCalculator() {
             </p>
             <button
               onClick={() => setShowCongrats(false)}
-              className="px-8 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-medium transition"
+              className="cursor-pointer px-8 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-medium transition"
             >
               Awesome
             </button>
