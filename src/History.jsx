@@ -153,45 +153,30 @@ export default function TimeCalculator() {
   };
 
   const handleOut = () => {
-  const now = Date.now();
+    const now = Date.now();
+    const sessionMs = isOnBreak ? sessionAccumulatedMs : sessionAccumulatedMs + (now - inTime);
+    const todayTotal = totalMs + sessionMs;
 
-  // Calculate how much time was worked in current session
-  const sessionMs = isOnBreak 
-    ? sessionAccumulatedMs 
-    : sessionAccumulatedMs + (now - inTime);
+    // Save to history
+    const todayKey = getTodayKey();
+    const updatedHistory = { ...history };
+    updatedHistory[todayKey] = {
+      totalMs: todayTotal,
+      date: todayKey,
+      formatted: formatTime(todayTotal),
+    };
+    setHistory(updatedHistory);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(updatedHistory));
 
-  // Get today's key
-  const todayKey = getTodayKey();
-
-  // Load current history (or empty object)
-  const currentHistory = { ...history };
-
-  // Get existing value for today (or 0 if none)
-  const existingTodayMs = currentHistory[todayKey]?.totalMs || 0;
-
-  // Add current session to whatever was already there
-  const newTodayTotalMs = existingTodayMs + sessionMs;
-
-  // Update history for today
-  currentHistory[todayKey] = {
-    totalMs: newTodayTotalMs,
-    date: todayKey,
-    formatted: formatTime(newTodayTotalMs),
+    // Reset current day
+    setTotalMs(0);
+    setIsWorking(false);
+    setIsOnBreak(false);
+    setSessionAccumulatedMs(0);
+    setLiveMs(0);
+    setInTime(null);
+    setEightHourNotified(false);
   };
-
-  // Save to state + localStorage
-  setHistory(currentHistory);
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(currentHistory));
-
-  // Reset current session / day tracking
-  setTotalMs(0);
-  setSessionAccumulatedMs(0);
-  setLiveMs(0);
-  setInTime(null);
-  setIsWorking(false);
-  setIsOnBreak(false);
-  setEightHourNotified(false);
-};
 
   const handleBreak = () => {
     const now = Date.now();
@@ -316,7 +301,7 @@ export default function TimeCalculator() {
               {!isWorking ? (
                 <button
                   onClick={handleIn}
-                  className="cursor-pointer w-full py-5 px-8 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xl shadow-md transition active:scale-[0.98]"
+                  className="w-full py-5 px-8 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xl shadow-md transition active:scale-[0.98]"
                 >
                   Start Work
                 </button>
@@ -324,7 +309,7 @@ export default function TimeCalculator() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <button
                     onClick={handleOut}
-                    className="cursor-pointer py-5 px-8 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xl shadow-md transition active:scale-[0.98]"
+                    className="py-5 px-8 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xl shadow-md transition active:scale-[0.98]"
                   >
                     End Work
                   </button>
@@ -332,14 +317,14 @@ export default function TimeCalculator() {
                   {!isOnBreak ? (
                     <button
                       onClick={handleBreak}
-                      className="cursor-pointer py-5 px-8 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold text-xl shadow-md transition active:scale-[0.98]"
+                      className="py-5 px-8 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold text-xl shadow-md transition active:scale-[0.98]"
                     >
                       Take Break
                     </button>
                   ) : (
                     <button
                       onClick={handleResume}
-                      className="cursor-pointer py-5 px-8 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xl shadow-md transition active:scale-[0.98]"
+                      className="py-5 px-8 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xl shadow-md transition active:scale-[0.98]"
                     >
                       Resume
                     </button>
@@ -367,7 +352,7 @@ export default function TimeCalculator() {
             </p>
             <button
               onClick={() => setShowCongrats(false)}
-              className="cursor-pointer px-8 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-medium transition"
+              className="px-8 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-medium transition"
             >
               Awesome
             </button>
@@ -383,7 +368,7 @@ export default function TimeCalculator() {
               <h2 className="text-2xl font-bold">Work History</h2>
               <button
                 onClick={() => setShowHistory(false)}
-                className="cursor-pointer text-4xl leading-none text-stone-600 hover:text-stone-900 dark:text-stone-300 dark:hover:text-stone-100 px-3 py-1 rounded hover:bg-stone-100 dark:hover:bg-stone-800 transition"
+                className="text-4xl leading-none text-stone-600 hover:text-stone-900 dark:text-stone-300 dark:hover:text-stone-100 px-3 py-1 rounded hover:bg-stone-100 dark:hover:bg-stone-800 transition"
               >
                 ×
               </button>
@@ -425,7 +410,7 @@ export default function TimeCalculator() {
             <div className="mt-8 text-center flex flex-col sm:flex-row justify-center gap-4">
               <button
                 onClick={() => setShowHistory(false)}
-                className="cursor-pointer px-10 py-4 bg-stone-700 hover:bg-stone-800 text-white rounded-xl font-medium transition"
+                className="px-10 py-4 bg-stone-700 hover:bg-stone-800 text-white rounded-xl font-medium transition"
               >
                 Close
               </button>
@@ -439,7 +424,7 @@ export default function TimeCalculator() {
                       setShowHistory(false);
                     }
                   }}
-                  className="cursor-pointer px-6 py-3 text-sm text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 underline"
+                  className="px-6 py-3 text-sm text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 underline"
                 >
                   Clear History
                 </button>

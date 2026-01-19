@@ -1,9 +1,8 @@
-import React ,{ useState } from 'react'
-import './App.css'
-import TimeCalculator from './TimeCalculator'
+import { Routes, Route, Link } from "react-router-dom";
+import TimeCalculator from "./TimeCalculator";
+import React from "react";
 
-function App() {
-
+export default function App() {
   return (
     <>
       <TimeCalculator />
@@ -11,4 +10,3 @@ function App() {
   )
 }
 
-export default App
