@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+
 
 const STORAGE_KEY = "office_time_tracker_v1";
 const HISTORY_KEY = "office_time_history_v1";
@@ -16,6 +18,7 @@ export default function TimeCalculator() {
   const [eightHourNotified, setEightHourNotified] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [history, setHistory] = useState({});
+  const navigate = useNavigate();
 
   // Theme management
   const [theme, setTheme] = useState(() => {
@@ -255,7 +258,7 @@ export default function TimeCalculator() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
 
           {/* Sidebar / Summary */}
-          <div className="lg:col-span-4">
+          <div className="lg:col-span-4 space-y-6">
             <div className="bg-white dark:bg-stone-900 rounded-xl shadow-sm border border-stone-200 dark:border-stone-800 p-6">
               <h2 className="text-xl font-semibold mb-6">Today's Summary</h2>
               <div className="space-y-6">
@@ -283,8 +286,19 @@ export default function TimeCalculator() {
                 </div>
               </div>
             </div>
-          </div>
 
+                {/* Manual Timer Button */}
+          <div className="lg:col-span-4">
+            <button
+              onClick={() => navigate('/manual-timer')}
+              className="cursor-pointer w-full px-4 py-2 text-sm font-medium rounded-lg bg-white/80 dark:bg-stone-900/80 backdrop-blur-sm border border-stone-200 dark:border-stone-800 hover:bg-stone-100 dark:hover:bg-stone-800 shadow-sm transition active:scale-95"
+            >
+              ⏱️ Manual Timer
+            </button>
+          </div>
+          </div>
+          
+        
           {/* Main Timer Card */}
           <div className="lg:col-span-8">
             <div className="bg-white dark:bg-stone-900 rounded-2xl shadow-sm border border-stone-200 dark:border-stone-800 p-6 sm:p-8 lg:p-10">

@@ -269,7 +269,10 @@ export default function TimeCalculator() {
               </div>
             </div>
           </div>
+          
+         
 
+      
           {/* Main Timer Card */}
           <div className="lg:col-span-8">
             <div className="bg-white dark:bg-stone-900 rounded-2xl shadow-sm border border-stone-200 dark:border-stone-800 p-6 sm:p-8 lg:p-10">
