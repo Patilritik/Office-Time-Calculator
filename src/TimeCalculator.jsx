@@ -180,6 +180,8 @@ export default function TimeCalculator() {
     totalMs: newTodayTotalMs,
     date: todayKey,
     formatted: formatTime(newTodayTotalMs),
+    inTime: inTime ? new Date(inTime).toISOString() : null,
+    outTime: now ? new Date(now).toISOString() : null,
   };
 
   // Save to state + localStorage
@@ -202,11 +204,10 @@ export default function TimeCalculator() {
     setSessionAccumulatedMs(accumulated);
     setLiveMs(accumulated);
     setIsOnBreak(true);
-    setInTime(null);
+    // Do NOT clear inTime here; keep the original inTime
   };
 
   const handleResume = () => {
-    setInTime(Date.now());
     setIsOnBreak(false);
   };
 
@@ -283,6 +284,17 @@ export default function TimeCalculator() {
                 <div>
                   <p className="text-sm text-stone-500 dark:text-stone-400">Goal</p>
                   <p className="text-lg font-medium mt-1">8 hours</p>
+                </div>
+                 <div>
+                  <p className="text-sm text-stone-500 dark:text-stone-400">In Time</p>
+                  <p className="text-lg font-medium mt-1">
+                    {inTime ? new Date(inTime).toLocaleTimeString("en-US", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      second: "2-digit",
+                      hour12: true,
+                    }) : "—"}
+                  </p>
                 </div>
               </div>
             </div>
@@ -430,6 +442,26 @@ export default function TimeCalculator() {
                       </div>
                       <div className="text-2xl font-bold font-mono text-teal-600 dark:text-teal-400">
                         {entry.formatted}
+                      </div>
+                      <div className="flex flex-col gap-1 text-right min-w-[120px]">
+                        <div className="text-xs text-stone-500 dark:text-stone-400">In Time</div>
+                        <div className="font-mono text-sm font-medium">
+                          {entry.inTime ? new Date(entry.inTime).toLocaleTimeString("en-US", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            second: "2-digit",
+                            hour12: true,
+                          }) : "—"}
+                        </div>
+                        <div className="text-xs text-stone-500 dark:text-stone-400 mt-2">Out Time</div>
+                        <div className="font-mono text-sm font-medium">
+                          {entry.outTime ? new Date(entry.outTime).toLocaleTimeString("en-US", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            second: "2-digit",
+                            hour12: true,
+                          }) : "—"}
+                        </div>
                       </div>
                     </div>
                   ))}
